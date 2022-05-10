@@ -1,14 +1,19 @@
 using System.IO;
 using UnityEngine;
-using UnityEditor;
 using UnityEngine.UI;
+using SimpleFileBrowser;
+using System.Collections;
 
 public class FileSystem : MonoBehaviour
 {
     string currentPath = "Untitled.png";
+    bool dialogIsOpen;
     void Awake()
     {
         GetComponent<Canvas>().enabled = false;
+        FileBrowser.SetFilters(true, new FileBrowser.Filter("Images", ".png"));
+        FileBrowser.SetDefaultFilter(".png");
+        dialogIsOpen = false;
     }
     void Update()
     {
@@ -20,20 +25,50 @@ public class FileSystem : MonoBehaviour
 
         else if (Input.GetKeyDown(KeyCode.Space))
         {
-            Texture2D texture = GetScreenShot();
-            string path = EditorUtility.SaveFilePanel("Save texture as PNG","","","png");
-
-            if (path.Length != 0)
+            if (!dialogIsOpen)
             {
-                currentPath = path;
-                SaveScreenshotAndOpenFile(texture);
+                dialogIsOpen = true;
+                StartCoroutine(ShowSaveDialogCoroutine());
             }
+            
         }
         else if (Input.GetKeyDown(KeyCode.Escape))
         {
-            GetComponent<Canvas>().enabled = false;
+            if (GetComponent<Canvas>().enabled)
+            {
+                GetComponent<Canvas>().enabled = false;
+            }
+            else
+            {
+                Application.Quit();
+            }
+        }
+
+    }
+
+ 
+
+  
+    IEnumerator ShowSaveDialogCoroutine()
+    {
+        Texture2D texture = GetScreenShot();
+        yield return FileBrowser.WaitForSaveDialog(FileBrowser.PickMode.Files, true, null, null, "Save a PNG File", "Save");
+        dialogIsOpen = false;
+        if (FileBrowser.Success)
+        {
+            for (int i = 0; i < FileBrowser.Result.Length; i++)
+            {
+                if(FileBrowser.Result[i].Length > 0)
+                {
+                    currentPath = FileBrowser.Result[i];
+                    SaveScreenshotAndOpenFile(texture);
+                }
+
+            }   
         }
     }
+
+
 
     Texture2D GetScreenShot()
     {
